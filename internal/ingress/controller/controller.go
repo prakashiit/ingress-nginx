@@ -1474,6 +1474,8 @@ func mergeAlternativeBackend(ing *ingress.Ingress, priUps *ingress.Backend, altU
 // If no match is found, then the serverless backend is deleted.
 func mergeAlternativeBackends(ing *ingress.Ingress, upstreams map[string]*ingress.Backend,
 	servers map[string]*ingress.Server) {
+	
+	klog.Warningf("mergeAlternativeBackends called")
 
 	// merge catch-all alternative backends
 	if ing.Spec.DefaultBackend != nil {
@@ -1537,6 +1539,11 @@ func mergeAlternativeBackends(ing *ingress.Ingress, upstreams map[string]*ingres
 			if altUps == nil {
 				klog.Warningf("alternative backend %s has already been removed", upsName)
 				continue
+			}
+			
+			if altUps.Name == "ingress-dms-canary-kong-proxy-8000" {
+				klog.Warningf("finding backend for %s", upsName)
+				klog.Warningf("Printing server object: %v", server)
 			}
 
 			merged := false
