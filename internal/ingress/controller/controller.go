@@ -1540,11 +1540,6 @@ func mergeAlternativeBackends(ing *ingress.Ingress, upstreams map[string]*ingres
 				klog.Warningf("alternative backend %s has already been removed", upsName)
 				continue
 			}
-			
-			if altUps.Name == "ingress-dms-canary-kong-proxy-8000" {
-				klog.Warningf("finding backend for %s", upsName)
-				klog.Warningf("Printing server object: %v", server)
-			}
 
 			merged := false
 			altEqualsPri := false
@@ -1556,6 +1551,11 @@ func mergeAlternativeBackends(ing *ingress.Ingress, upstreams map[string]*ingres
 					host)
 
 				continue
+			}
+			
+			if altUps.Name == "ingress-dms-canary-kong-proxy-8000" {
+				klog.Warningf("finding backend for %s", upsName)
+				klog.Warningf("Printing server object: %v", server)
 			}
 
 			// find matching paths
