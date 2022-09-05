@@ -1555,7 +1555,9 @@ func mergeAlternativeBackends(ing *ingress.Ingress, upstreams map[string]*ingres
 			
 			if altUps.Name == "ingress-dms-canary-kong-proxy-8000" {
 				klog.Warningf("finding backend for %s", upsName)
-				klog.Warningf("Printing server object: %v", server.Locations)
+				pkt_s, pkt__ := json.MarshalIndent(server.Locations, "", "\t")
+				klog.Warningf("Printing server object: %s", string(pkt_s))
+				
 			}
 
 			// find matching paths
