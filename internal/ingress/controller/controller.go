@@ -1558,6 +1558,7 @@ func mergeAlternativeBackends(ing *ingress.Ingress, upstreams map[string]*ingres
 				klog.Warningf("finding backend for %s", upsName)
 				pkt_s, pkt__ := json.MarshalIndent(server.Locations, "", "\t")
 				klog.Warningf("Printing server object: %s", string(pkt_s))
+				klog.Warningf("Ignore object: %v", string(pkt__))
 				
 			}
 
