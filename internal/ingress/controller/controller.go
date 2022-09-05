@@ -1480,6 +1480,11 @@ func mergeAlternativeBackends(ing *ingress.Ingress, upstreams map[string]*ingres
 		upsName := upstreamName(ing.Namespace, ing.Spec.DefaultBackend.Service)
 
 		altUps := upstreams[upsName]
+		
+		if altUps.Name == "ingress-dms-canary-kong-proxy-8000" {
+			klog.Warningf("finding backend for %s", upsName)
+			klog.Warningf("Printing server object: %v", servers[defServerName])
+		}
 
 		if altUps == nil {
 			klog.Warningf("alternative backend %s has already been removed", upsName)
