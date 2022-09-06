@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"encoding/json"
 
 	"github.com/mitchellh/hashstructure"
 	apiv1 "k8s.io/api/core/v1"
@@ -146,6 +145,7 @@ func (n NGINXController) GetPublishService() *apiv1.Service {
 // configuration file and passes the resulting data structures to the backend
 // (OnUpdate) when a reload is deemed necessary.
 func (n *NGINXController) syncIngress(interface{}) error {
+	klog.Warningf("PCL:- Sync Started for Ingress")
 	n.syncRateLimiter.Accept()
 
 	if n.syncQueue.IsShuttingDown() {
@@ -609,10 +609,32 @@ func (n *NGINXController) getBackendServers(ingresses []*ingress.Ingress) ([]*in
 	upstreams := n.createUpstreams(ingresses, du)
 	servers := n.createServers(ingresses, upstreams, du)
 
+	// printing list of upstreams
+	klog.Warningf("PCL:- printing list of upstreams")
+	for _, upstream := range upstreams {
+		klog.Warningf("PCL:- Endpoints in " + upstream.Name)
+		for _, endpoint := range upstream.Endpoints {
+			klog.Warningf("PCL:-\t " + endpoint.Address + ":" + endpoint.Port)
+		}
+
+	}
+
+	// printing list of servers
+	klog.Warningf("PCL:- printing list of servers")
+	for _, server := range servers {
+		klog.Warningf("PCL:- " + server.Hostname)
+		for _, location := range server.Locations {
+			klog.Warningf("PCL:-\t " + location.Path)
+		}
+	}
+
 	var canaryIngresses []*ingress.Ingress
 
 	for _, ing := range ingresses {
 		ingKey := k8s.MetaNamespaceKey(ing)
+
+		klog.Warningf("PCL:- Starting process for " + ingKey)
+
 		anns := ing.ParsedAnnotations
 
 		if !n.store.GetBackendConfiguration().AllowSnippetAnnotations {
@@ -620,6 +642,7 @@ func (n *NGINXController) getBackendServers(ingresses []*ingress.Ingress) ([]*in
 		}
 
 		for _, rule := range ing.Spec.Rules {
+			klog.Warningf("PCL:- Starting process for rule in ingress")
 			host := rule.Host
 			if host == "" {
 				host = defServerName
@@ -669,14 +692,18 @@ func (n *NGINXController) getBackendServers(ingresses []*ingress.Ingress) ([]*in
 				continue
 			}
 
+			klog.Warningf("PCL:- Starting process for each path in rule")
+
 			for _, path := range rule.HTTP.Paths {
 				if path.Backend.Service == nil {
+					klog.Warningf("path ingored cuz no backend " + path.Path)
 					// skip non-service backends
 					klog.V(3).Infof("Ingress %q and path %q does not contain a service backend, using default backend", ingKey, path.Path)
 					continue
 				}
 
 				upsName := upstreamName(ing.Namespace, path.Backend.Service)
+				klog.Warningf("PCL:- path=" + path.Path + ", upstreamName=" + upsName)
 
 				ups := upstreams[upsName]
 
@@ -797,8 +824,21 @@ func (n *NGINXController) getBackendServers(ingresses []*ingress.Ingress) ([]*in
 	}
 
 	if nonCanaryIngressExists(ingresses, canaryIngresses) {
+
+		klog.Warningf("PCL:- printing Ingresses list")
+		for _, ingress := range ingresses {
+			klog.Warningf("PCL:- " + ingress.Name)
+		}
+		klog.Warningf("PCL:- printing Canary Ingresses list")
+		for _, ingress := range ingresses {
+			klog.Warningf("PCL:- " + ingress.Name)
+		}
+		klog.Warningf("PCL:- Non canary Ingress Exists, merging canary into it.")
+
 		for _, canaryIng := range canaryIngresses {
+			klog.Warningf("PCL:- mergeAlternativeBackends for ingress=" + canaryIng.Name)
 			mergeAlternativeBackends(canaryIng, upstreams, servers)
+			klog.Warningf("PCL:- alternative backends merged")
 		}
 	}
 
@@ -1475,18 +1515,17 @@ func mergeAlternativeBackend(ing *ingress.Ingress, priUps *ingress.Backend, altU
 // If no match is found, then the serverless backend is deleted.
 func mergeAlternativeBackends(ing *ingress.Ingress, upstreams map[string]*ingress.Backend,
 	servers map[string]*ingress.Server) {
-	
-	klog.Warningf("mergeAlternativeBackends called")
+
+	klog.Warningf("PCL:- mergeAlternativeBackends called")
 
 	// merge catch-all alternative backends
 	if ing.Spec.DefaultBackend != nil {
+		klog.Warningf("PCL:- default backend of ingress is not nil. PANIC!")
 		upsName := upstreamName(ing.Namespace, ing.Spec.DefaultBackend.Service)
 
 		altUps := upstreams[upsName]
-		
 		if altUps.Name == "ingress-dms-canary-kong-proxy-8000" {
 			klog.Warningf("finding backend for %s", upsName)
-			klog.Warningf("Printing server object: %v", servers[defServerName])
 		}
 
 		if altUps == nil {
@@ -1521,19 +1560,23 @@ func mergeAlternativeBackends(ing *ingress.Ingress, upstreams map[string]*ingres
 	}
 
 	for _, rule := range ing.Spec.Rules {
+		klog.Warningf("PCL:- processing rule = ")
 		host := rule.Host
 		if host == "" {
 			host = defServerName
 		}
 
+		klog.Warningf("PCL:- processing all paths in rule")
 		for _, path := range rule.HTTP.Paths {
 			if path.Backend.Service == nil {
+				klog.Warningf("PCL:- path ingored cuz no service backend " + path.Path)
 				// skip non-service backends
 				klog.V(3).Infof("Ingress %q and path %q does not contain a service backend, using default backend", k8s.MetaNamespaceKey(ing), path.Path)
 				continue
 			}
 
 			upsName := upstreamName(ing.Namespace, path.Backend.Service)
+			klog.Warningf("PCL:- path=" + path.Path + ", upstreamName=" + upsName)
 
 			altUps := upstreams[upsName]
 
@@ -1553,17 +1596,23 @@ func mergeAlternativeBackends(ing *ingress.Ingress, upstreams map[string]*ingres
 
 				continue
 			}
-			
-			if altUps.Name == "ingress-dms-canary-kong-proxy-8000" {
-				klog.Warningf("finding backend for %s", upsName)
-				pkt_s, _ := json.MarshalIndent(server.Locations, "", "\t")
-				klog.Warningf("Printing server object: %s", string(pkt_s))
-				
-			}
+
+			// if altUps.Name == "ingress-dms-canary-kong-proxy-8000" {
+			// 	klog.Warningf("finding backend for %s", upsName)
+			// 	pkt_s, _ := json.MarshalIndent(server.Locations, "", "\t")
+			// 	klog.Warningf("Printing server object: %s", string(pkt_s))
+
+			// }
 
 			// find matching paths
+			klog.Warningf("PCL:- finding matching paths/Location for backend=" + altUps.Name)
+
 			for _, loc := range server.Locations {
+
 				priUps := upstreams[loc.Backend]
+				if priUps == nil {
+					klog.Warningf("PCL:- primary backend is nil for location=" + loc.Path)
+				}
 				altEqualsPri = altUps.Name == priUps.Name
 				if altEqualsPri {
 					klog.Warningf("alternative upstream %s in Ingress %s/%s is primary upstream in Other Ingress for location %s%s!",
@@ -1571,11 +1620,15 @@ func mergeAlternativeBackends(ing *ingress.Ingress, upstreams map[string]*ingres
 					break
 				}
 
+				klog.Warningf("PCL:- checking mergeability. altUps=" + altUps.Name + ", priUps=" + priUps.Name)
+
 				if canMergeBackend(priUps, altUps) && loc.Path == path.Path && *loc.PathType == *path.PathType {
+					klog.Warningf("PCL:- mergeable backend found for altUps = " + altUps.Name)
 					klog.V(2).Infof("matching backend %v found for alternative backend %v",
 						priUps.Name, altUps.Name)
 
 					merged = mergeAlternativeBackend(ing, priUps, altUps)
+					klog.Warningf("PCL:- backends merged. altUps=" + altUps.Name + ", priUps=" + priUps.Name + ". merged=" + strconv.FormatBool(merged))
 				}
 			}
 
