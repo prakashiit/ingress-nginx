@@ -23,6 +23,8 @@ import (
 	"strings"
 	"time"
 
+	"encoding/json"
+
 	"github.com/mitchellh/hashstructure"
 	apiv1 "k8s.io/api/core/v1"
 	networking "k8s.io/api/networking/v1"
@@ -1621,6 +1623,14 @@ func mergeAlternativeBackends(ing *ingress.Ingress, upstreams map[string]*ingres
 				}
 
 				klog.Warningf("PCL:- checking mergeability. altUps=" + altUps.Name + ", priUps=" + priUps.Name)
+
+				klog.Warningf("canMergeBackend(priUps, altUps) = " + strconv.FormatBool(canMergeBackend(priUps, altUps)))
+				klog.Warningf("loc.Path compRes = " + strconv.FormatBool(loc.Path == path.Path) + ". " + loc.Path + ", " + path.Path)
+				klog.Warningf("*loc.PathType == *path.PathType " + strconv.FormatBool(*loc.PathType == *path.PathType))
+				pkt_loc_pathtype, _ := json.MarshalIndent(*loc.PathType, "", "\t")
+				klog.Warningf("*loc.PathType = " + string(pkt_loc_pathtype))
+				pkt_path_pathtype, _ := json.MarshalIndent(*path.PathType, "", "\t")
+				klog.Warningf("*loc.PathType = " + string(pkt_path_pathtype))
 
 				if canMergeBackend(priUps, altUps) && loc.Path == path.Path && *loc.PathType == *path.PathType {
 					klog.Warningf("PCL:- mergeable backend found for altUps = " + altUps.Name)
