@@ -633,7 +633,7 @@ func (n *NGINXController) getBackendServers(ingresses []*ingress.Ingress) ([]*in
 	for _, ing := range ingresses {
 		ingKey := k8s.MetaNamespaceKey(ing)
 
-		klog.Warningf("PCL:- Starting process for " + ingKey)
+		klog.Warningf("PCL:- Starting process for ingress = " + ingKey)
 
 		anns := ing.ParsedAnnotations
 
@@ -826,12 +826,12 @@ func (n *NGINXController) getBackendServers(ingresses []*ingress.Ingress) ([]*in
 	if nonCanaryIngressExists(ingresses, canaryIngresses) {
 
 		klog.Warningf("PCL:- printing Ingresses list")
-		for _, ingress := range ingresses {
-			klog.Warningf("PCL:- " + ingress.Name)
+		for _, normalIngress := range ingresses {
+			klog.Warningf("PCL:- " + normalIngress.Name)
 		}
 		klog.Warningf("PCL:- printing Canary Ingresses list")
-		for _, ingress := range ingresses {
-			klog.Warningf("PCL:- " + ingress.Name)
+		for _, canaryIngress := range canaryIngresses {
+			klog.Warningf("PCL:- " + canaryIngress.Name)
 		}
 		klog.Warningf("PCL:- Non canary Ingress Exists, merging canary into it.")
 
